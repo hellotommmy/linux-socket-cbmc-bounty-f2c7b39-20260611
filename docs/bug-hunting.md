@@ -7,7 +7,7 @@ assertions.
 
 ## Current Status
 
-`__sys_socketpair` is the first bug-hunt target because its cleanup behavior
+`__sys_socketpair` was the first bug-hunt target because its cleanup behavior
 combines two reserved fds, two sockets, two files, `put_user`, a security hook,
 protocol `socketpair`, `sock_alloc_file`, `fd_install`, and `fput`.
 
@@ -25,9 +25,29 @@ The current profile:
 This means no counterexample was found in the current bounded model. It is not a
 bug bounty claim.
 
+`____sys_sendmsg` is now the second bug-hunt target. The first bounded profile
+checks the syscall-layer control-message path: `msg_controllen > INT_MAX`,
+stack-vs-dynamic control buffers, `sock_kmalloc`, `copy_from_user`,
+compat-cmsg conversion, `sock_kfree_s`, `sock_sendmsg_nosec`, `__sock_sendmsg`,
+and clearing `MSG_INTERNAL_SENDMSG_FLAGS` before protocol send.
+
+The current sendmsg profile:
+
+- source: real `net/socket.c` from the configured Linux tree
+- generated dependency: Kbuild `net/socket.i`
+- runner: `scripts/run-real-linux-sendmsg-control-bughunt.sh`
+- proof metadata:
+  `verification/cbmc/proofs/net_sendmsg_control_bughunt/proof.json`
+- property class: control-buffer lifetime, copy-failure cleanup, and protocol
+  send flag sanitization
+- latest local result: `VERIFICATION SUCCESSFUL`, `0 of 274 failed`
+
+This also means no counterexample was found in the current bounded model. It is
+not a bug bounty claim.
+
 ## Next Targets
 
-1. `____sys_sendmsg`, `___sys_sendmsg`, and `copy_msghdr_from_user`
+1. Extend sendmsg outward to `___sys_sendmsg` and `copy_msghdr_from_user`
 
    Focus: control-message lengths, iovec import boundaries, `sock_kmalloc`
    cleanup, and flag sanitization.

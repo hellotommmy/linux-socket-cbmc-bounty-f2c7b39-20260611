@@ -13,6 +13,13 @@ def parse_c_int(token: str) -> int:
     return int(token, 0)
 
 
+def parse_c_or_expression(expr: str) -> int:
+    value = 0
+    for part in expr.split("|"):
+        value |= parse_c_int(part)
+    return value
+
+
 def find_required(pattern: str, text: str, label: str):
     match = re.search(pattern, text, flags=re.S)
     if not match:
@@ -55,6 +62,26 @@ def main() -> int:
         compact,
         "SOCK_PACKET enum value",
     )
+    msg_cmsg_compat = find_required(
+        r"if\s*\(\s*\(\s*([0-9A-Fa-fxULul]+)\s*&\s*flags\s*\)\s*&&\s*ctl_len\s*\)",
+        compact,
+        "MSG_CMSG_COMPAT in ____sys_sendmsg",
+    )
+    internal_sendmsg_flags = find_required(
+        r"flags\s*&=\s*~\s*\(\s*([0-9A-Fa-fxULul\s|]+?)\s*\)\s*;\s*msg_sys->msg_flags\s*=\s*flags\s*;",
+        compact,
+        "MSG_INTERNAL_SENDMSG_FLAGS in ____sys_sendmsg",
+    )
+    msg_dontwait = find_required(
+        r"if\s*\(\s*sock->file->f_flags\s*&\s*[0-9A-Fa-fxULul]+\s*\)\s*msg_sys->msg_flags\s*\|=\s*([0-9A-Fa-fxULul]+)\s*;",
+        compact,
+        "MSG_DONTWAIT in ____sys_sendmsg",
+    )
+    enobufs = find_required(
+        r"err\s*=\s*-\s*([0-9A-Fa-fxULul]+)\s*;\s*if\s*\(\s*msg_sys->msg_controllen\s*>\s*\(\(int\)\(~0U\s*>>\s*1\)\)\s*\)",
+        compact,
+        "ENOBUFS in ____sys_sendmsg",
+    )
 
     sock_type_mask = parse_c_int(invalid.group(1))
     sock_cloexec = parse_c_int(invalid.group(2))
@@ -83,6 +110,11 @@ def main() -> int:
 #define VKERNEL_EFAULT 14
 #define VKERNEL_EMFILE 24
 #define VKERNEL_EPERM 1
+#define VKERNEL_ENOBUFS {parse_c_int(enobufs.group(1))}
+#define VKERNEL_MSG_CMSG_COMPAT {parse_c_int(msg_cmsg_compat.group(1))}U
+#define VKERNEL_MSG_INTERNAL_SENDMSG_FLAGS {parse_c_or_expression(internal_sendmsg_flags.group(1))}U
+#define VKERNEL_MSG_DONTWAIT {parse_c_int(msg_dontwait.group(1))}U
+#define VKERNEL_INT_MAX ((int)(~0U >> 1))
 
 #endif
 """

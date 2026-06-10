@@ -1,0 +1,48 @@
+{
+  "name": "net_sendmsg_control_bughunt",
+  "entry_point": "____sys_sendmsg",
+  "harness": "verification/cbmc/proofs/net_sendmsg_control_bughunt/bughunt_tail.c",
+  "source_under_verification": null,
+  "real_source_pipeline": {
+    "runner": "scripts/run-real-linux-sendmsg-control-bughunt.sh",
+    "linux_source_env": "LINUX_SRC",
+    "linux_build_env": "LINUX_BUILD",
+    "kbuild_targets": [
+      "prepare",
+      "scripts",
+      "net/socket.i"
+    ],
+    "generated_source": "$LINUX_BUILD/net/socket.i",
+    "proof_tail": "verification/cbmc/proofs/net_sendmsg_control_bughunt/bughunt_tail.c",
+    "rewrites": {
+      "BUILD_BUG_ON_preprocessed_compiletime_assert": "runtime no-op after Kbuild preprocessing",
+      "sock_kmalloc_gfp_macro_expansion": "model-irrelevant gfp argument 0",
+      "MSG_INTERNAL_SENDMSG_FLAGS_mask": "semantically equivalent unsigned mask to avoid CBMC signed-to-unsigned bitmask noise"
+    }
+  },
+  "upstream": {
+    "project": "torvalds/linux",
+    "file": "net/socket.c",
+    "symbols": [
+      "____sys_sendmsg"
+    ],
+    "reference_url": "https://github.com/torvalds/linux/blob/master/net/socket.c"
+  },
+  "spec_files": [
+    "verification/cbmc/proofs/net_sendmsg_control_bughunt/bughunt_tail.c"
+  ],
+  "cbmc": {
+    "function": "main",
+    "object_bits": 12,
+    "unwind": 2,
+    "checks": [
+      "--bounds-check",
+      "--pointer-check",
+      "--signed-overflow-check",
+      "--unsigned-overflow-check",
+      "--conversion-check",
+      "--div-by-zero-check",
+      "--pointer-overflow-check"
+    ]
+  }
+}
