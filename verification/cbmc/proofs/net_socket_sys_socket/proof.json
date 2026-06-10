@@ -1,0 +1,70 @@
+{
+  "name": "net_socket_sys_socket",
+  "entry_point": "__sys_socket",
+  "harness": "verification/cbmc/proofs/net_socket_sys_socket/harness.c",
+  "source_under_verification": "kernel/net/socket_cbmc_slice.c",
+  "real_source_pipeline": {
+    "runner": "scripts/run-real-linux-socket-proof.sh",
+    "linux_source_env": "LINUX_SRC",
+    "linux_build_env": "LINUX_BUILD",
+    "kbuild_targets": [
+      "prepare",
+      "scripts",
+      "net/socket.i"
+    ],
+    "generated_source": "$LINUX_BUILD/net/socket.i",
+    "proof_tail": "verification/cbmc/proofs/net_socket_sys_socket/real_harness_tail.c",
+    "call_replacements": {
+      "sock_create": "socket_model_sock_create",
+      "sock_map_fd": "socket_model_sock_map_fd"
+    }
+  },
+  "upstream": {
+    "project": "torvalds/linux",
+    "file": "net/socket.c",
+    "symbols": [
+      "__sys_socket_create",
+      "update_socket_protocol",
+      "__sys_socket"
+    ],
+    "reference_url": "https://github.com/torvalds/linux/blob/master/net/socket.c"
+  },
+  "models": [
+    "verification/cbmc/source/socket_models.c"
+  ],
+  "spec_files": [
+    "verification/cbmc/proofs/net_socket_sys_socket/real_harness_tail.c"
+  ],
+  "legacy_spec_files": [
+    "verification/cbmc/include/socket_contracts.h",
+    "verification/cbmc/proofs/net_socket_sys_socket/harness.c"
+  ],
+  "variants": [
+    {
+      "name": "linux_generic",
+      "description": "SOCK_NONBLOCK equals O_NONBLOCK, matching common Linux architectures.",
+      "defines": []
+    },
+    {
+      "name": "arch_distinct_nonblock",
+      "description": "SOCK_NONBLOCK differs from O_NONBLOCK, exercising the normalization branch.",
+      "defines": [
+        "SOCK_NONBLOCK=16384",
+        "O_NONBLOCK=2048"
+      ]
+    }
+  ],
+  "cbmc": {
+    "function": "main",
+    "object_bits": 12,
+    "checks": [
+      "--bounds-check",
+      "--pointer-check",
+      "--signed-overflow-check",
+      "--unsigned-overflow-check",
+      "--conversion-check",
+      "--div-by-zero-check",
+      "--pointer-overflow-check"
+    ]
+  }
+}

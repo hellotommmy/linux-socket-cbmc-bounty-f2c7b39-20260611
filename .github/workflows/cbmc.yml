@@ -1,0 +1,55 @@
+name: cbmc
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CBMC and Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            bison \
+            build-essential \
+            cbmc \
+            flex \
+            libelf-dev \
+            libssl-dev \
+            linux-source \
+            python3
+      - name: Unpack Linux source
+        run: |
+          mkdir -p build/linux-src
+          tar -xaf /usr/src/linux-source-*.tar.* \
+            -C build/linux-src \
+            --strip-components=1
+      - name: Run real-source socket proof
+        env:
+          LINUX_SRC: ${{ github.workspace }}/build/linux-src
+          LINUX_BUILD: ${{ github.workspace }}/build/linux-kbuild
+          ARCH: x86_64
+          CC: gcc
+        run: bash scripts/run-real-linux-socket-proof.sh
+      - name: Run real-source socketpair bug hunt
+        env:
+          LINUX_SRC: ${{ github.workspace }}/build/linux-src
+          LINUX_BUILD: ${{ github.workspace }}/build/linux-kbuild
+          ARCH: x86_64
+          CC: gcc
+        run: bash scripts/run-real-linux-socketpair-bughunt.sh
+      - name: Run legacy slice proof
+        run: bash scripts/run-all-proofs.sh
+      - name: Report proof metrics
+        run: |
+          python3 scripts/count-proof-metrics.py \
+            verification/cbmc/proofs/net_socket_sys_socket/proof.json \
+            --linux-src build/linux-src
+          python3 scripts/count-proof-metrics.py \
+            verification/cbmc/proofs/net_socketpair_bughunt/proof.json \
+            --linux-src build/linux-src
