@@ -167,8 +167,8 @@ net_sendmsg_control_bughunt:
 
 net_accept_bughunt:
   verified_source_loc = 45
-  specification_lines = 52
-  bounty_units = 2.340
+  specification_lines = 54
+  bounty_units = 2.430
 
 net_getsockopt_bughunt:
   verified_source_loc = 29

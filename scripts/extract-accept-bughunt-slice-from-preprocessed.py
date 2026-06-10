@@ -25,6 +25,16 @@ def rewrite_accept_body(body: str) -> str:
     return "\n".join(rewritten) + "\n"
 
 
+def accept_uses_proto_accept_arg(body: str) -> bool:
+    if "struct proto_accept_arg *arg" in body:
+        return True
+    if "ops->accept(sock, newsock, arg)" in body:
+        return True
+    if "ops->accept(sock, newsock, sock->file->f_flags | file_flags" in body:
+        return False
+    raise ValueError("could not identify do_accept protocol callback ABI")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("preprocessed")
@@ -33,9 +43,20 @@ def main() -> int:
 
     text = Path(args.preprocessed).read_text(encoding="utf-8", errors="replace")
     body = rewrite_accept_body(find_function(text, "do_accept"))
+    uses_proto_accept_arg = accept_uses_proto_accept_arg(body)
+    accept_abi_define = "1" if uses_proto_accept_arg else "0"
+    accept_callback_type = (
+        "int (*accept)(struct socket *sock, struct socket *newsock,\n"
+        "\t\t\t      struct proto_accept_arg *arg);"
+        if uses_proto_accept_arg
+        else "int (*accept)(struct socket *sock, struct socket *newsock,\n"
+        "\t\t\t      int flags, bool kern);"
+    )
 
     prelude = """/* Generated from Kbuild net/socket.i by extract-accept-bughunt-slice-from-preprocessed.py. */
 #include "socket_contracts_kernel_constants.h"
+
+#define VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG __ACCEPT_ABI_DEFINE__
 
 typedef _Bool bool;
 
@@ -85,8 +106,7 @@ struct file {
 
 struct proto_ops {
 \tstruct module *owner;
-\tint (*accept)(struct socket *sock, struct socket *newsock,
-\t\t\t      struct proto_accept_arg *arg);
+__ACCEPT_CALLBACK_TYPE__
 \tint (*getname)(struct socket *sock, struct sockaddr *addr, int peer);
 };
 
@@ -153,6 +173,10 @@ int move_addr_to_user(struct __kernel_sockaddr_storage *kaddr, int klen,
 \t\t\t      struct sockaddr *uaddr, int *ulen);
 void fput(struct file *file);
 """
+    prelude = (
+        prelude.replace("__ACCEPT_ABI_DEFINE__", accept_abi_define)
+        .replace("__ACCEPT_CALLBACK_TYPE__", f"\t{accept_callback_type}")
+    )
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -15,7 +15,8 @@
     "generated_source": "$LINUX_BUILD/net/socket.i",
     "proof_tail": "verification/cbmc/proofs/net_accept_bughunt/bughunt_tail.c",
     "rewrites": {
-      "READ_ONCE_preprocessed_compiletime_assert": "semantically equivalent direct ops read after Kbuild preprocessing"
+      "READ_ONCE_preprocessed_compiletime_assert": "semantically equivalent direct ops read after Kbuild preprocessing",
+      "accept_callback_abi": "extractor emits the proto_ops.accept model matching the Kbuild-derived do_accept ABI, covering both proto_accept_arg and legacy file_flags forms"
     }
   },
   "upstream": {

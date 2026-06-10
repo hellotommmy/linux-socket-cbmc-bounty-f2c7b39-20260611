@@ -10,6 +10,9 @@
 int nondet_int(void);
 unsigned int nondet_uint(void);
 
+#define MODEL_ACCEPT_FILE_FLAGS \
+	((int)VKERNEL_O_CLOEXEC | (int)VKERNEL_O_NONBLOCK)
+
 static struct module accept_model_module;
 static struct proto_ops accept_model_ops;
 static struct proto accept_model_proto;
@@ -36,6 +39,7 @@ static int model_getname_calls;
 static int model_move_addr_calls;
 static int model_initial_arg_flags;
 static int model_listen_file_flags;
+static int model_file_flags;
 static int model_expected_accept_flags;
 static int model_last_getname_len;
 
@@ -110,13 +114,20 @@ static void model_reset(void)
 	model_move_addr_calls = 0;
 	model_initial_arg_flags = 0;
 	model_listen_file_flags = 0;
+	model_file_flags = 0;
 	model_expected_accept_flags = 0;
 	model_last_getname_len = -1;
 }
 
+#if VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG
 static int accept_model_proto_accept(struct socket *sock,
 				     struct socket *newsock,
 				     struct proto_accept_arg *arg)
+#else
+static int accept_model_proto_accept(struct socket *sock,
+				     struct socket *newsock,
+				     int flags, bool kern)
+#endif
 {
 	unsigned int choice = nondet_uint();
 
@@ -128,9 +139,15 @@ static int accept_model_proto_accept(struct socket *sock,
 			 "protocol accept receives live sockets");
 	__CPROVER_assert(newsock->owned_by_file && newsock->file == &accept_new_file,
 			 "protocol accept receives a file-owned new socket");
+#if VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG
 	__CPROVER_assert(arg != 0, "protocol accept receives a non-null arg");
 	__CPROVER_assert(arg->flags == model_expected_accept_flags,
 			 "do_accept ORs listening file flags into arg before protocol accept");
+#else
+	__CPROVER_assert(flags == model_expected_accept_flags,
+			 "do_accept ORs listening file flags and file_flags before protocol accept");
+	__CPROVER_assert(!kern, "do_accept invokes protocol accept in user mode");
+#endif
 	model_proto_accept_calls++;
 	__CPROVER_assume(choice <= 1);
 	return choice == 0 ? 0 : -VKERNEL_EPROTONOSUPPORT;
@@ -296,7 +313,9 @@ static int accept_result_errno(struct file *result)
 
 int main(void)
 {
+#if VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG
 	struct proto_accept_arg arg;
+#endif
 	struct sockaddr user_addr;
 	int user_addr_len = nondet_int();
 	struct file *input_file;
@@ -312,20 +331,35 @@ int main(void)
 	model_reset();
 	accept_model_ops.accept = accept_model_proto_accept;
 	accept_model_ops.getname = accept_model_getname;
-	model_initial_arg_flags = nondet_int();
 	model_listen_file_flags = nondet_int();
-	model_expected_accept_flags = model_initial_arg_flags | model_listen_file_flags;
+	__CPROVER_assume((model_listen_file_flags & ~MODEL_ACCEPT_FILE_FLAGS) == 0);
 	accept_listen_file.f_flags = model_listen_file_flags;
+#if VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG
+	model_initial_arg_flags = nondet_int();
+	__CPROVER_assume((model_initial_arg_flags & ~MODEL_ACCEPT_FILE_FLAGS) == 0);
+	model_expected_accept_flags = model_initial_arg_flags | model_listen_file_flags;
 	arg.flags = model_initial_arg_flags;
 	arg.err = nondet_int();
 	arg.is_empty = nondet_int();
 	arg.kern = (_Bool)(nondet_uint() & 1U);
+#else
+	model_file_flags = nondet_int();
+	__CPROVER_assume((model_file_flags & ~MODEL_ACCEPT_FILE_FLAGS) == 0);
+	model_expected_accept_flags = model_listen_file_flags | model_file_flags;
+#endif
 
 	input_file = input_is_socket ? &accept_listen_file : &accept_plain_file;
+#if VKERNEL_ACCEPT_USES_PROTO_ACCEPT_ARG
 	result = do_accept(input_file, &arg,
 			   want_peer_address ? &user_addr : 0,
 			   want_peer_address ? &user_addr_len : 0,
 			   flags);
+#else
+	result = do_accept(input_file, (unsigned int)model_file_flags,
+			   want_peer_address ? &user_addr : 0,
+			   want_peer_address ? &user_addr_len : 0,
+			   flags);
+#endif
 	result_errno = accept_result_errno(result);
 
 	__CPROVER_assert(result_errno == 0 ||
