@@ -47,6 +47,9 @@ This project follows that pattern for Linux `__sys_socket`:
 - `scripts/run-real-linux-sendmsg-control-bughunt.sh` applies the same pipeline
   to `____sys_sendmsg`, then checks control-message allocation/freeing and flag
   sanitization before the modular protocol-send boundary.
+- `scripts/run-real-linux-accept-bughunt.sh` applies the same pipeline to
+  `do_accept`, then checks accepted socket/file cleanup and peer-address export
+  failures before the fd-install layer.
 
 Answer to the modular/context-sensitive question: AWS proofs are modular in how
 they slice the codebase and schedule CI jobs, but context-sensitive in each

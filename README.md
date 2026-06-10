@@ -33,6 +33,10 @@ The third target is a bug-hunting proof for real `____sys_sendmsg`, focused on
 control-message buffer allocation/freeing, usercopy fault cleanup, compat cmsg
 conversion, and internal sendmsg flag sanitization before protocol send.
 
+The fourth target is a bug-hunting proof for real `do_accept`, focused on new
+socket/new file cleanup after partial success, peer-address export failures,
+and propagation of listening socket type/ops into the accepted socket.
+
 ## Layout
 
 ```text
@@ -44,16 +48,20 @@ verification/cbmc/source/socket_models.c        Operational models/stubs
 verification/cbmc/proofs/net_socket_sys_socket  Harnesses and proof metadata
 verification/cbmc/proofs/net_sendmsg_control_bughunt
                                                 Sendmsg control-buffer proof
+verification/cbmc/proofs/net_accept_bughunt     Accept cleanup proof
 scripts/run-real-linux-socket-proof.sh          Real Linux/Kbuild proof runner
 scripts/run-real-linux-socketpair-bughunt.sh    Real Linux socketpair bug hunt
 scripts/run-real-linux-sendmsg-control-bughunt.sh
                                                 Real Linux sendmsg bug hunt
+scripts/run-real-linux-accept-bughunt.sh        Real Linux accept bug hunt
 scripts/extract-socket-proof-slice-from-preprocessed.py
                                                 Extract proof slice from socket.i
 scripts/extract-socketpair-bughunt-slice-from-preprocessed.py
                                                 Extract socketpair bug-hunt slice
 scripts/extract-sendmsg-control-bughunt-slice-from-preprocessed.py
                                                 Extract sendmsg bug-hunt slice
+scripts/extract-accept-bughunt-slice-from-preprocessed.py
+                                                Extract accept bug-hunt slice
 scripts/sanitize-kernel-preprocessed-for-cbmc.py
                                                 CBMC frontend compatibility pass
 scripts/run-proof.sh                            Run one proof variant
@@ -94,6 +102,16 @@ CC=gcc \
 bash scripts/run-real-linux-sendmsg-control-bughunt.sh
 ```
 
+Run the accept cleanup bug hunt:
+
+```sh
+LINUX_SRC=/path/to/linux \
+LINUX_BUILD=$PWD/build/linux-x86_64 \
+ARCH=x86_64 \
+CC=gcc \
+bash scripts/run-real-linux-accept-bughunt.sh
+```
+
 The legacy slice proof is still available for quick local regression of the
 contracts and models:
 
@@ -125,6 +143,11 @@ net_sendmsg_control_bughunt:
   verified_source_loc = 60
   specification_lines = 32
   bounty_units = 1.920
+
+net_accept_bughunt:
+  verified_source_loc = 45
+  specification_lines = 52
+  bounty_units = 2.340
 ```
 
 If you have a Linux source tree locally, check that the verified slice still

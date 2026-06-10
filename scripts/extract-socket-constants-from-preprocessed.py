@@ -82,6 +82,21 @@ def main() -> int:
         compact,
         "ENOBUFS in ____sys_sendmsg",
     )
+    enotsock = find_required(
+        r"sock\s*=\s*sock_from_file\s*\(\s*file\s*\)\s*;\s*if\s*\(\s*!\s*sock\s*\)\s*return\s+ERR_PTR\s*\(\s*-\s*([0-9A-Fa-fxULul]+)\s*\)",
+        compact,
+        "ENOTSOCK in do_accept",
+    )
+    enfile = find_required(
+        r"newsock\s*=\s*sock_alloc\s*\(\s*\)\s*;\s*if\s*\(\s*!\s*newsock\s*\)\s*return\s+ERR_PTR\s*\(\s*-\s*([0-9A-Fa-fxULul]+)\s*\)",
+        compact,
+        "ENFILE in do_accept",
+    )
+    econnaborted = find_required(
+        r"if\s*\(\s*len\s*<\s*0\s*\)\s*\{\s*err\s*=\s*-\s*([0-9A-Fa-fxULul]+)\s*;\s*goto\s+out_fd\s*;",
+        compact,
+        "ECONNABORTED in do_accept getname path",
+    )
 
     sock_type_mask = parse_c_int(invalid.group(1))
     sock_cloexec = parse_c_int(invalid.group(2))
@@ -111,6 +126,9 @@ def main() -> int:
 #define VKERNEL_EMFILE 24
 #define VKERNEL_EPERM 1
 #define VKERNEL_ENOBUFS {parse_c_int(enobufs.group(1))}
+#define VKERNEL_ENOTSOCK {parse_c_int(enotsock.group(1))}
+#define VKERNEL_ENFILE {parse_c_int(enfile.group(1))}
+#define VKERNEL_ECONNABORTED {parse_c_int(econnaborted.group(1))}
 #define VKERNEL_MSG_CMSG_COMPAT {parse_c_int(msg_cmsg_compat.group(1))}U
 #define VKERNEL_MSG_INTERNAL_SENDMSG_FLAGS {parse_c_or_expression(internal_sendmsg_flags.group(1))}U
 #define VKERNEL_MSG_DONTWAIT {parse_c_int(msg_dontwait.group(1))}U

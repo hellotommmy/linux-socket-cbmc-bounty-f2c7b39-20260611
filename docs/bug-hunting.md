@@ -45,6 +45,25 @@ The current sendmsg profile:
 This also means no counterexample was found in the current bounded model. It is
 not a bug bounty claim.
 
+`do_accept` is now the third bug-hunt target. The current bounded profile checks
+new socket/new file lifetime, `sock_alloc_file` failure release behavior,
+security and protocol accept failures, peer-address `getname`/`move_addr_to_user`
+failures, and propagation of listener type/ops into the accepted socket.
+
+The current accept profile:
+
+- source: real `net/socket.c` from the configured Linux tree
+- generated dependency: Kbuild `net/socket.i`
+- runner: `scripts/run-real-linux-accept-bughunt.sh`
+- proof metadata:
+  `verification/cbmc/proofs/net_accept_bughunt/proof.json`
+- property class: accepted file/socket cleanup and peer-address export error
+  handling
+- latest local result: `VERIFICATION SUCCESSFUL`, `0 of 316 failed`
+
+This also means no counterexample was found in the current bounded model. It is
+not a bug bounty claim.
+
 ## Next Targets
 
 1. Extend sendmsg outward to `___sys_sendmsg` and `copy_msghdr_from_user`
@@ -62,10 +81,10 @@ not a bug bounty claim.
    Focus: `kernel_optval`, BPF rewrite outcomes, `kfree` exactly once, and
    SOL_SOCKET/custom/protocol dispatch consistency.
 
-4. `do_accept`, `__sys_accept4_file`, and `move_addr_to_user`
+4. Extend accept outward to `__sys_accept4_file`
 
-   Focus: new-file cleanup after partial success, address length truncation,
-   and fd installation ordering.
+   Focus: fd reservation/install cleanup around `FD_ADD`, invalid flag
+   normalization, and interaction with the proven `do_accept` cleanup contract.
 
 ## Triage Rule
 
