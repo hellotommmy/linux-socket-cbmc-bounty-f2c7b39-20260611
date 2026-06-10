@@ -6,6 +6,21 @@ from pathlib import Path
 from extract_socket_common import find_function
 
 
+def is_kernel_sockptr_warning(line: str) -> bool:
+    return (
+        "if (" in line
+        and "optval" in line
+        and "optlen" in line
+        and "is_kernel" in line
+        and (
+            "__ret_warn_on" in line
+            or "__builtin_expect" in line
+            or "WARN" in line
+            or "unlikely" in line
+        )
+    )
+
+
 def rewrite_getsockopt_body(body: str) -> str:
     rewritten = []
     read_once_rewrite = 0
@@ -33,7 +48,7 @@ def rewrite_getsockopt_body(body: str) -> str:
             read_once_rewrite += 1
             continue
 
-        if "if (({ int __ret_warn_on" in line and "optval.is_kernel || optlen.is_kernel" in line:
+        if is_kernel_sockptr_warning(line):
             rewritten.append("\t\tif (optval.is_kernel || optlen.is_kernel)")
             warn_rewrite += 1
             skipping_warn = True
@@ -49,7 +64,7 @@ def rewrite_getsockopt_body(body: str) -> str:
 
     if skipping_warn or skipping_bpf_semicolon:
         raise ValueError("unterminated getsockopt rewrite skip")
-    if read_once_rewrite != 1 or warn_rewrite != 1 or bpf_rewrite != 1:
+    if read_once_rewrite != 1 or warn_rewrite not in (0, 1) or bpf_rewrite != 1:
         raise ValueError(
             "unexpected getsockopt rewrite counts: "
             f"read_once_rewrite={read_once_rewrite}, "

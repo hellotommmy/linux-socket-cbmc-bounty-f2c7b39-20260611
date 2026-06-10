@@ -16,7 +16,7 @@
     "proof_tail": "verification/cbmc/proofs/net_getsockopt_bughunt/bughunt_tail.c",
     "rewrites": {
       "READ_ONCE_preprocessed_compiletime_assert": "semantically equivalent direct ops read after Kbuild preprocessing",
-      "WARN_ONCE_preprocessed_bug_table": "semantically equivalent explicit kernel-sockptr rejection branch",
+      "WARN_ONCE_preprocessed_bug_table": "semantically equivalent explicit kernel-sockptr rejection branch when Kbuild expands WARN_ONCE to bug-table instrumentation",
       "BPF_CGROUP_RUN_PROG_GETSOCKOPT_disabled": "current Kbuild configuration preprocesses the BPF hook to the input err value"
     }
   },
