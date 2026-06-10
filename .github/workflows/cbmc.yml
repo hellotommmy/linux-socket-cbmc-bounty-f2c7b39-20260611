@@ -57,6 +57,13 @@ jobs:
           ARCH: x86_64
           CC: gcc
         run: bash scripts/run-real-linux-accept-bughunt.sh
+      - name: Run real-source getsockopt dispatch bug hunt
+        env:
+          LINUX_SRC: ${{ github.workspace }}/build/linux-src
+          LINUX_BUILD: ${{ github.workspace }}/build/linux-kbuild
+          ARCH: x86_64
+          CC: gcc
+        run: bash scripts/run-real-linux-getsockopt-bughunt.sh
       - name: Run legacy slice proof
         run: bash scripts/run-all-proofs.sh
       - name: Report proof metrics
@@ -72,4 +79,7 @@ jobs:
             --linux-src build/linux-src
           python3 scripts/count-proof-metrics.py \
             verification/cbmc/proofs/net_accept_bughunt/proof.json \
+            --linux-src build/linux-src
+          python3 scripts/count-proof-metrics.py \
+            verification/cbmc/proofs/net_getsockopt_bughunt/proof.json \
             --linux-src build/linux-src

@@ -1,0 +1,48 @@
+{
+  "name": "net_getsockopt_bughunt",
+  "entry_point": "do_sock_getsockopt",
+  "harness": "verification/cbmc/proofs/net_getsockopt_bughunt/bughunt_tail.c",
+  "source_under_verification": null,
+  "real_source_pipeline": {
+    "runner": "scripts/run-real-linux-getsockopt-bughunt.sh",
+    "linux_source_env": "LINUX_SRC",
+    "linux_build_env": "LINUX_BUILD",
+    "kbuild_targets": [
+      "prepare",
+      "scripts",
+      "net/socket.i"
+    ],
+    "generated_source": "$LINUX_BUILD/net/socket.i",
+    "proof_tail": "verification/cbmc/proofs/net_getsockopt_bughunt/bughunt_tail.c",
+    "rewrites": {
+      "READ_ONCE_preprocessed_compiletime_assert": "semantically equivalent direct ops read after Kbuild preprocessing",
+      "WARN_ONCE_preprocessed_bug_table": "semantically equivalent explicit kernel-sockptr rejection branch",
+      "BPF_CGROUP_RUN_PROG_GETSOCKOPT_disabled": "current Kbuild configuration preprocesses the BPF hook to the input err value"
+    }
+  },
+  "upstream": {
+    "project": "torvalds/linux",
+    "file": "net/socket.c",
+    "symbols": [
+      "do_sock_getsockopt"
+    ],
+    "reference_url": "https://github.com/torvalds/linux/blob/master/net/socket.c"
+  },
+  "spec_files": [
+    "verification/cbmc/proofs/net_getsockopt_bughunt/bughunt_tail.c"
+  ],
+  "cbmc": {
+    "function": "main",
+    "object_bits": 12,
+    "unwind": 2,
+    "checks": [
+      "--bounds-check",
+      "--pointer-check",
+      "--signed-overflow-check",
+      "--unsigned-overflow-check",
+      "--conversion-check",
+      "--div-by-zero-check",
+      "--pointer-overflow-check"
+    ]
+  }
+}

@@ -50,6 +50,9 @@ This project follows that pattern for Linux `__sys_socket`:
 - `scripts/run-real-linux-accept-bughunt.sh` applies the same pipeline to
   `do_accept`, then checks accepted socket/file cleanup and peer-address export
   failures before the fd-install layer.
+- `scripts/run-real-linux-getsockopt-bughunt.sh` applies the same pipeline to
+  `do_sock_getsockopt`, then checks sockptr user/kernel dispatch and callback
+  reachability for the current Kbuild configuration.
 
 Answer to the modular/context-sensitive question: AWS proofs are modular in how
 they slice the codebase and schedule CI jobs, but context-sensitive in each

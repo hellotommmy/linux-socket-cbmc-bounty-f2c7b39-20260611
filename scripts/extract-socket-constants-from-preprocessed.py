@@ -97,6 +97,16 @@ def main() -> int:
         compact,
         "ECONNABORTED in do_accept getname path",
     )
+    sol_socket = find_required(
+        r"if\s*\(\s*level\s*==\s*([0-9A-Fa-fxULul]+)\s*\)\s*\{\s*err\s*=\s*sk_getsockopt\s*\(",
+        compact,
+        "SOL_SOCKET in do_sock_getsockopt",
+    )
+    eopnotsupp = find_required(
+        r"else\s+if\s*\(\s*__builtin_expect\s*\(.*?!ops->getsockopt.*?\)\s*\)\s*\{\s*err\s*=\s*-\s*([0-9A-Fa-fxULul]+)\s*;",
+        compact,
+        "EOPNOTSUPP in do_sock_getsockopt",
+    )
 
     sock_type_mask = parse_c_int(invalid.group(1))
     sock_cloexec = parse_c_int(invalid.group(2))
@@ -129,6 +139,8 @@ def main() -> int:
 #define VKERNEL_ENOTSOCK {parse_c_int(enotsock.group(1))}
 #define VKERNEL_ENFILE {parse_c_int(enfile.group(1))}
 #define VKERNEL_ECONNABORTED {parse_c_int(econnaborted.group(1))}
+#define VKERNEL_EOPNOTSUPP {parse_c_int(eopnotsupp.group(1))}
+#define VKERNEL_SOL_SOCKET {parse_c_int(sol_socket.group(1))}
 #define VKERNEL_MSG_CMSG_COMPAT {parse_c_int(msg_cmsg_compat.group(1))}U
 #define VKERNEL_MSG_INTERNAL_SENDMSG_FLAGS {parse_c_or_expression(internal_sendmsg_flags.group(1))}U
 #define VKERNEL_MSG_DONTWAIT {parse_c_int(msg_dontwait.group(1))}U

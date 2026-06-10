@@ -64,6 +64,27 @@ The current accept profile:
 This also means no counterexample was found in the current bounded model. It is
 not a bug bounty claim.
 
+`do_sock_getsockopt` is now the fourth bug-hunt target. The current bounded
+profile checks security short-circuiting, non-compat max `optlen` reads,
+`SOL_SOCKET` dispatch to `sk_getsockopt`, legacy protocol dispatch, missing
+legacy callback handling, and rejection of kernel `sockptr_t` arguments before
+legacy protocol callbacks. In the current defconfig Kbuild output,
+`BPF_CGROUP_RUN_PROG_GETSOCKOPT` preprocesses to the dispatch result itself, so
+this profile does not claim BPF-helper coverage.
+
+The current getsockopt profile:
+
+- source: real `net/socket.c` from the configured Linux tree
+- generated dependency: Kbuild `net/socket.i`
+- runner: `scripts/run-real-linux-getsockopt-bughunt.sh`
+- proof metadata:
+  `verification/cbmc/proofs/net_getsockopt_bughunt/proof.json`
+- property class: sockptr user/kernel dispatch and callback reachability
+- latest local result: `VERIFICATION SUCCESSFUL`, `0 of 77 failed`
+
+This also means no counterexample was found in the current bounded model. It is
+not a bug bounty claim.
+
 ## Next Targets
 
 1. Extend sendmsg outward to `___sys_sendmsg` and `copy_msghdr_from_user`
@@ -71,10 +92,10 @@ not a bug bounty claim.
    Focus: control-message lengths, iovec import boundaries, `sock_kmalloc`
    cleanup, and flag sanitization.
 
-2. `do_sock_getsockopt` and `sockptr_to_sockopt`
+2. BPF-enabled `do_sock_getsockopt`
 
-   Focus: user `optlen`, BPF cgroup getsockopt rewrites, protocol callbacks,
-   and usercopy writeback length consistency.
+   Focus: cgroup getsockopt rewrites and value-result `optlen` consistency
+   under a real Kbuild config that enables `CONFIG_CGROUP_BPF`.
 
 3. `do_sock_setsockopt`
 
