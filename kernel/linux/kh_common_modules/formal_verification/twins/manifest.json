@@ -1,0 +1,17 @@
+{
+  "twins": [
+    {
+      "production": "net/socket.c",
+      "twin": "twins/net/socket.c",
+      "proofs": [
+        "net_socket_sys_socket",
+        "net_socketpair_bughunt",
+        "net_sendmsg_control_bughunt",
+        "net_accept_bughunt",
+        "net_setsockopt_bughunt",
+        "net_getsockopt_bughunt"
+      ],
+      "policy": "byte-identical verification twin; not counted as a wrapper or specification"
+    }
+  ]
+}

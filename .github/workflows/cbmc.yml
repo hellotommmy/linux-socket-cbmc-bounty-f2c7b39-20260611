@@ -97,3 +97,42 @@ jobs:
           python3 scripts/count-proof-metrics.py \
             verification/cbmc/proofs/net_getsockopt_bughunt/proof.json \
             --linux-src build/linux-src
+
+  product-verification-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CBMC and Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            bison \
+            build-essential \
+            cbmc \
+            flex \
+            libelf-dev \
+            libssl-dev \
+            linux-source \
+            python3
+      - name: Unpack Linux source
+        run: |
+          mkdir -p build/product-linux-src
+          tar -xaf /usr/src/linux-source-*.tar.* \
+            -C build/product-linux-src \
+            --strip-components=1
+      - name: Install formal verification directory into product layout
+        run: |
+          mkdir -p build/product-linux-src/kh_common_modules
+          cp -a kernel/linux/kh_common_modules/formal_verification \
+            build/product-linux-src/kh_common_modules/formal_verification
+          cp build/product-linux-src/net/socket.c \
+            build/product-linux-src/kh_common_modules/formal_verification/twins/net/socket.c
+      - name: Run product-layout verification stage
+        env:
+          LINUX_SRC: ${{ github.workspace }}/build/product-linux-src
+          LINUX_BUILD: ${{ github.workspace }}/build/product-linux-kbuild
+          ARCH: x86_64
+          CC: gcc
+        working-directory: build/product-linux-src/kh_common_modules/formal_verification
+        run: make proofs metrics

@@ -2,3 +2,9 @@ build/
 __pycache__/
 *.goto
 *.txt.tmp
+
+/kernel/linux/*
+!/kernel/linux/kh_common_modules/
+!/kernel/linux/kh_common_modules/**
+/kernel/linux/kh_common_modules/formal_verification/build/
+/kernel/linux/kh_common_modules/formal_verification/**/__pycache__/
