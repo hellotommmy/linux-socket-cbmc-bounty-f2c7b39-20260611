@@ -22,6 +22,9 @@ For this repository, this is governed by `RULES.md`:
   for the current mainline target and are listed in that target's `spec_files`.
 - extra wrappers outside the current mainline target are negative bounty
   evidence, not billable work.
+- assertions that are tautologies, self-equalities, constant true, or reachable
+  only because an impossible assumption removed the interesting path do not
+  count even though they are syntactically `__CPROVER_assert` statements.
 
 Run:
 
@@ -29,6 +32,7 @@ Run:
 python3 scripts/count-proof-metrics.py \
   verification/cbmc/proofs/net_socket_sys_socket/proof.json \
   --linux-src /path/to/linux
+python3 scripts/check-spec-meaningfulness.py
 ```
 
 This is not a legal or financial quote. It is a transparent, reproducible

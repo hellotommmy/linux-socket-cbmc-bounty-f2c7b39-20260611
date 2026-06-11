@@ -53,6 +53,13 @@ This project follows that pattern for Linux `__sys_socket`:
 - `scripts/run-real-linux-getsockopt-bughunt.sh` applies the same pipeline to
   `do_sock_getsockopt`, then checks sockptr user/kernel dispatch and callback
   reachability for the current Kbuild configuration.
+- `scripts/run-real-linux-setsockopt-bughunt.sh` applies the same pipeline to
+  `do_sock_setsockopt`, then checks negative length rejection, security
+  short-circuiting, SOL_SOCKET/custom/protocol dispatch, and cleanup behavior
+  for the current Kbuild configuration.
+- `scripts/check-spec-meaningfulness.py` is a lightweight CI guard against
+  obvious vacuous specifications such as constant-true assertions,
+  self-equalities, and impossible assumptions.
 
 Answer to the modular/context-sensitive question: AWS proofs are modular in how
 they slice the codebase and schedule CI jobs, but context-sensitive in each

@@ -56,6 +56,16 @@ than merely increasing proof count.
 - Over-assuming away the interesting path is a proof failure. Assumptions must
   model documented kernel/environment behavior and should be weaker than the
   property being proved.
+- Tautologies, self-equalities, constant-true assertions, and assertions that
+  are true only because an impossible assumption removed the path are not
+  specification work and must not be counted.
+- Each accepted property must be tied to at least one real source behavior:
+  return value, branch reachability, boundary-call argument, resource lifetime,
+  pointer class, flag normalization, or cleanup ordering.
+- Literal false assertions are allowed only for intentional unreachable states
+  whose message documents the impossible state being excluded.
+- `docs/proof-property-meaning.md` is the current human-readable map from
+  assertions to the bug classes they are meant to prevent.
 
 ## Agent Mechanism
 

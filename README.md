@@ -5,6 +5,9 @@ The governing rules are in `RULES.md`: real Linux source only, Kbuild pipeline
 provenance, explicit formal specifications, and no wrapper code counted as
 bounty work.
 
+For a plain-language explanation of what the current assertions mean and why
+tautological properties do not count, see `docs/proof-property-meaning.md`.
+
 The first proof targets the Linux `net/socket.c` `__sys_socket` path. The main
 runner uses a real Linux source tree and Kbuild-generated artifacts
 (`include/generated/*`, arch generated headers, and `net/socket.i`) before CBMC
@@ -87,6 +90,7 @@ scripts/sanitize-kernel-preprocessed-for-cbmc.py
 scripts/run-proof.sh                            Run one proof variant
 scripts/run-all-proofs.sh                       Run every configured variant
 scripts/count-proof-metrics.py                  Bounty accounting helper
+scripts/check-spec-meaningfulness.py            Reject obvious vacuous specs
 ```
 
 ## Run
@@ -157,6 +161,7 @@ contracts and models:
 
 ```sh
 bash scripts/run-all-proofs.sh
+python3 scripts/check-spec-meaningfulness.py
 python3 scripts/count-proof-metrics.py \
   verification/cbmc/proofs/net_socket_sys_socket/proof.json \
   --linux-src /path/to/linux

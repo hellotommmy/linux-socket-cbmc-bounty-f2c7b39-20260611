@@ -85,6 +85,31 @@ The current getsockopt profile:
 This also means no counterexample was found in the current bounded model. It is
 not a bug bounty claim.
 
+`do_sock_setsockopt` is now the fifth bug-hunt target. The current bounded
+profile checks negative `optlen` rejection, security short-circuiting,
+`SOL_SOCKET` versus custom protocol dispatch, missing protocol callback
+handling, and the cleanup edge produced by the current BPF-disabled defconfig
+Kbuild output.
+
+The current setsockopt profile:
+
+- source: real `net/socket.c` from the configured Linux tree
+- generated dependency: Kbuild `net/socket.i`
+- runner: `scripts/run-real-linux-setsockopt-bughunt.sh`
+- proof metadata:
+  `verification/cbmc/proofs/net_setsockopt_bughunt/proof.json`
+- property class: sockptr dispatch, option-length rejection, and callback
+  reachability
+- latest local result: `VERIFICATION SUCCESSFUL`, `0 of 70 failed`
+
+This also means no counterexample was found in the current bounded model. It is
+not a bug bounty claim.
+
+The meaning of each current property class is tracked in
+`docs/proof-property-meaning.md`. Assertions that are constant true,
+self-equalities, or reachable only after impossible assumptions are not accepted
+as bounty-bearing specifications.
+
 ## Next Targets
 
 1. Extend sendmsg outward to `___sys_sendmsg` and `copy_msghdr_from_user`
@@ -92,17 +117,13 @@ not a bug bounty claim.
    Focus: control-message lengths, iovec import boundaries, `sock_kmalloc`
    cleanup, and flag sanitization.
 
-2. BPF-enabled `do_sock_getsockopt`
+2. BPF-enabled `do_sock_getsockopt` and `do_sock_setsockopt`
 
-   Focus: cgroup getsockopt rewrites and value-result `optlen` consistency
-   under a real Kbuild config that enables `CONFIG_CGROUP_BPF`.
+   Focus: cgroup getsockopt/setsockopt rewrites, value-result `optlen`
+   consistency, `kernel_optval`, and `kfree` exactly once under a real Kbuild
+   config that enables `CONFIG_CGROUP_BPF`.
 
-3. `do_sock_setsockopt`
-
-   Focus: `kernel_optval`, BPF rewrite outcomes, `kfree` exactly once, and
-   SOL_SOCKET/custom/protocol dispatch consistency.
-
-4. Extend accept outward to `__sys_accept4_file`
+3. Extend accept outward to `__sys_accept4_file`
 
    Focus: fd reservation/install cleanup around `FD_ADD`, invalid flag
    normalization, and interaction with the proven `do_accept` cleanup contract.
