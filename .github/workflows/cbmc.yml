@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test specification meaningfulness checker
+        run: python3 scripts/check-spec-meaningfulness.py --self-test
       - name: Check specification meaningfulness
         run: python3 scripts/check-spec-meaningfulness.py
       - name: Install CBMC and Linux build dependencies

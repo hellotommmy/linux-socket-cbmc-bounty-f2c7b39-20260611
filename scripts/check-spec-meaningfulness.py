@@ -221,6 +221,31 @@ def check_proof(root: Path, proof_path: Path):
     return problems
 
 
+def run_self_test() -> None:
+    dummy = Path("dummy.c")
+    bad_cases = [
+        Call(dummy, 1, "assert", "1", "always true"),
+        Call(dummy, 2, "assert", "((_Bool)1)", "always true"),
+        Call(dummy, 3, "assert", "x == x", "self equality"),
+        Call(dummy, 4, "assert", "a || !a", "excluded middle"),
+        Call(dummy, 5, "assume", "false", ""),
+        Call(dummy, 6, "assert", "0", "always false"),
+    ]
+    good_cases = [
+        Call(dummy, 7, "assert", "result == -VKERNEL_EINVAL", "negative optlen returns EINVAL"),
+        Call(dummy, 8, "assert", "model_live_files == 0", "failed path releases files"),
+        Call(dummy, 9, "assert", "0", "unreachable modeled errno"),
+    ]
+
+    for case in bad_cases:
+        if not check_call(case):
+            raise AssertionError(f"self-test missed bad case: {case.expr}")
+    for case in good_cases:
+        problems = check_call(case)
+        if problems:
+            raise AssertionError(f"self-test rejected good case {case.expr}: {problems}")
+
+
 def default_proofs(root: Path):
     return sorted((root / "verification/cbmc/proofs").glob("*/proof.json"))
 
@@ -244,8 +269,19 @@ def resolve_proof_arg(root: Path, arg: str) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run built-in checks for tautology and impossible-assumption detection",
+    )
     parser.add_argument("proof_json", nargs="*")
     args = parser.parse_args()
+
+    if args.self_test:
+        run_self_test()
+        if not args.proof_json:
+            print("spec meaningfulness self-test passed")
+            return 0
 
     root = repo_root()
     proof_paths = [resolve_proof_arg(root, item) for item in args.proof_json]
